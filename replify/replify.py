@@ -17,7 +17,7 @@ class Indentifier(object):
         self.last_char = '\n'
 
     def write(self, data):
-        if self.last_char == '\n':
+        if self.last_char == '\n' and data:
             self.outfile.write('{0}{1}'.format(self.initial_indent, data))
         else:
             self.outfile.write(data)
@@ -47,6 +47,7 @@ def replify(infile, outfile, context, console_type=None):
     if console_type is None:
         console_type = code.InteractiveConsole
     console = console_type(context, '<stdin>')
+    dereplify = False
     initial_indent = None
     needmore = False
     _stdout = sys.stdout
@@ -58,12 +59,24 @@ def replify(infile, outfile, context, console_type=None):
                 initial_indent = re.match(
                     r'\s*', line.rstrip('\r\n')).group(0)
                 sys.stdout = sys.stderr = Indentifier(outfile, initial_indent)
+                if line.lstrip().startswith(ps1):
+                    dereplify = True
             if line.startswith(initial_indent):
                 line = line[len(initial_indent):]
             else:
                 raise ValueError()
-            sys.stdout.write('{0}{1}'.format(ps2 if needmore else ps1, line))
-            needmore = console.push(line.rstrip('\r\n'))
+            if dereplify:
+                if line.startswith(ps1):
+                    line = line[len(ps1):]
+                elif line.startswith(ps2):
+                    line = line[len(ps2):]
+                else:
+                    line = ''
+                sys.stdout.write(line)
+            else:
+                sys.stdout.write(
+                    '{0}{1}'.format(ps2 if needmore else ps1, line))
+                needmore = console.push(line.rstrip('\r\n'))
     finally:
         sys.stdout = _stdout
         sys.stderr = _stderr

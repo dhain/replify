@@ -24,37 +24,40 @@ class TestReplify(unittest.TestCase):
         return outfile.getvalue()
 
     def test_blank_line(self):
-        result = self._helper('\n')
-        self.assertEqual(
-            result,
-            '>>> \n'
-        )
+        input = '\n'
+        result = self._helper(input)
+        self.assertEqual(result, '>>> \n')
+        self.assertEqual(self._helper(result), input)
 
     def test_blank_line_with_indent(self):
-        result = self._helper('    \n')
-        self.assertEqual(
-            result,
-            '    >>> \n'
-        )
+        input = '    \n'
+        result = self._helper(input)
+        self.assertEqual(result, '    >>> \n')
+        self.assertEqual(self._helper(result), input)
 
     def test_one_single_line_statement(self):
-        result = self._helper('1\n')
+        input = '1\n'
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> 1\n'
             '1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_one_single_line_statement_with_context(self):
-        result = self._helper('a\n', {'a': 1})
+        input = 'a\n'
+        result = self._helper(input, {'a': 1})
         self.assertEqual(
             result,
             '>>> a\n'
             '1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_one_multi_line_statement(self):
-        result = self._helper('(\n    a\n)\n', {'a': 1})
+        input = '(\n    a\n)\n'
+        result = self._helper(input, {'a': 1})
         self.assertEqual(
             result,
             '>>> (\n'
@@ -62,20 +65,25 @@ class TestReplify(unittest.TestCase):
             '... )\n'
             '1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_one_single_line_statement_with_indent(self):
-        result = self._helper('    a\n', {'a': 1})
+        input = '    a\n'
+        result = self._helper(input, {'a': 1})
         self.assertEqual(
             result,
             '    >>> a\n'
             '    1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_inconsistent_indent_raises_ValueError(self):
         self.assertRaises(ValueError, self._helper, '    1\n2')
+        self.assertRaises(ValueError, self._helper, '    >>> 1\n2')
 
     def test_two_single_line_statements(self):
-        result = self._helper('a\nb\n', {'a': 1, 'b': 2})
+        input = 'a\nb\n'
+        result = self._helper(input, {'a': 1, 'b': 2})
         self.assertEqual(
             result,
             '>>> a\n'
@@ -83,9 +91,11 @@ class TestReplify(unittest.TestCase):
             '>>> b\n'
             '2\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_two_multi_line_statements(self):
-        result = self._helper('(\n    a\n)\n(\n    b\n)\n', {'a': 1, 'b': 2})
+        input = '(\n    a\n)\n(\n    b\n)\n'
+        result = self._helper(input, {'a': 1, 'b': 2})
         self.assertEqual(
             result,
             '>>> (\n'
@@ -97,9 +107,11 @@ class TestReplify(unittest.TestCase):
             '... )\n'
             '2\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_def(self):
-        result = self._helper('def a():\n    b = 1\n    return b\n\na()\n')
+        input = 'def a():\n    b = 1\n    return b\n\na()\n'
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> def a():\n'
@@ -109,9 +121,10 @@ class TestReplify(unittest.TestCase):
             '>>> a()\n'
             '1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_def_with_empty_line(self):
-        result = self._helper(
+        input = (
             'def a():\n'
             '    b = 1\n'
             '    \n'
@@ -119,6 +132,7 @@ class TestReplify(unittest.TestCase):
             '\n'
             'a()\n'
         )
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> def a():\n'
@@ -129,9 +143,11 @@ class TestReplify(unittest.TestCase):
             '>>> a()\n'
             '1\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_syntaxerror(self):
-        result = self._helper(')\n')
+        input = ')\n'
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> )\n'
@@ -140,9 +156,11 @@ class TestReplify(unittest.TestCase):
             '    ^\n'
             'SyntaxError: invalid syntax\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_syntaxerror_inside_def(self):
-        result = self._helper('def a():\n    )\n')
+        input = 'def a():\n    )\n'
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> def a():\n'
@@ -152,9 +170,11 @@ class TestReplify(unittest.TestCase):
             '    ^\n'
             'SyntaxError: invalid syntax\n'
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_nameerror(self):
-        result = self._helper('a\n')
+        input = 'a\n'
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> a\n'
@@ -162,14 +182,16 @@ class TestReplify(unittest.TestCase):
             '  File "<stdin>", line 1, in <module>\n'
             "NameError: name 'a' is not defined\n"
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_nameerror_inside_call(self):
-        result = self._helper(
+        input = (
             'def a():\n'
             '    b\n'
             '\n'
             'a()\n'
         )
+        result = self._helper(input)
         self.assertEqual(
             result,
             '>>> def a():\n'
@@ -181,23 +203,26 @@ class TestReplify(unittest.TestCase):
             '  File "<stdin>", line 2, in a\n'
             "NameError: global name 'b' is not defined\n"
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_import(self):
+        input = 'import base64\n'
         context = {}
-        result = self._helper('import base64\n', context)
+        result = self._helper(input, context)
         self.assertEqual(
             result,
             '>>> import base64\n'
         )
         self.assertIn('base64', context)
+        self.assertEqual(self._helper(result), input)
 
     def test_exception_raised_by_library(self):
-        context = {}
-        result = self._helper(
+        input = (
             'import base64\n'
-            'base64.b64decode("Z")\n',
-            context
+            'base64.b64decode("Z")\n'
         )
+        context = {}
+        result = self._helper(input, context)
         self.assertEqual(
             result,
             '>>> import base64\n'
@@ -209,15 +234,15 @@ class TestReplify(unittest.TestCase):
             'TypeError: Incorrect padding\n'.format(
                 context['base64'].__file__.rstrip('c'))
         )
+        self.assertEqual(self._helper(result), input)
 
     def test_doctest_style_exception(self):
-        context = {}
-        result = self._helper(
+        input = (
             'import base64\n'
-            'base64.b64decode("Z")\n',
-            context,
-            replify.DoctestTracebackConsole
+            'base64.b64decode("Z")\n'
         )
+        context = {}
+        result = self._helper(input, context, replify.DoctestTracebackConsole)
         self.assertEqual(
             result,
             '>>> import base64\n'
@@ -226,6 +251,7 @@ class TestReplify(unittest.TestCase):
             '  ...\n'
             'TypeError: Incorrect padding\n'
         )
+        self.assertEqual(self._helper(result), input)
 
 
 if __name__ == '__main__':
