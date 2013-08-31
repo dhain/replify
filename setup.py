@@ -64,5 +64,14 @@ setup_args = dict(
 )
 
 
+if sys.version_info[:2] < (2, 7):
+    setup_args['install_requires'].extend([
+        'argparse'
+    ])
+    setup_args['tests_require'].extend([
+        'unittest2'
+    ])
+
+
 if __name__ == '__main__':
     setup(**setup_args)

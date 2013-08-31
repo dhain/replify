@@ -8,8 +8,17 @@ test_replify
 Tests for `replify` module.
 """
 
-import unittest
-from cStringIO import StringIO
+import sys
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 from replify import replify
 
@@ -206,50 +215,50 @@ class TestReplify(unittest.TestCase):
         self.assertEqual(self._helper(result), input)
 
     def test_import(self):
-        input = 'import base64\n'
+        input = 'from replify.test import libstub\n'
         context = {}
         result = self._helper(input, context)
         self.assertEqual(
             result,
-            '>>> import base64\n'
+            '>>> from replify.test import libstub\n'
         )
-        self.assertIn('base64', context)
+        self.assertIn('libstub', context)
         self.assertEqual(self._helper(result), input)
 
     def test_exception_raised_by_library(self):
         input = (
-            'import base64\n'
-            'base64.b64decode("Z")\n'
+            'from replify.test import libstub\n'
+            'libstub.raise_exception()\n'
         )
         context = {}
         result = self._helper(input, context)
         self.assertEqual(
             result,
-            '>>> import base64\n'
-            '>>> base64.b64decode("Z")\n'
+            '>>> from replify.test import libstub\n'
+            '>>> libstub.raise_exception()\n'
             'Traceback (most recent call last):\n'
             '  File "<stdin>", line 1, in <module>\n'
-            '  File "{0}", line 76, in b64decode\n'
-            '    raise TypeError(msg)\n'
-            'TypeError: Incorrect padding\n'.format(
-                context['base64'].__file__.rstrip('c'))
+            '  File "{0}", line 2, in raise_exception\n'
+            '    raise Exception(\'libstub\')\n'
+            'Exception: libstub\n'.format(
+                context['libstub'].__file__.rstrip('c'))
         )
         self.assertEqual(self._helper(result), input)
 
     def test_doctest_style_exception(self):
         input = (
-            'import base64\n'
-            'base64.b64decode("Z")\n'
+            'from replify.test import libstub\n'
+            'libstub.raise_exception()\n'
         )
         context = {}
         result = self._helper(input, context, replify.DoctestTracebackConsole)
         self.assertEqual(
             result,
-            '>>> import base64\n'
-            '>>> base64.b64decode("Z")\n'
+            '>>> from replify.test import libstub\n'
+            '>>> libstub.raise_exception()\n'
             'Traceback (most recent call last):\n'
             '  ...\n'
-            'TypeError: Incorrect padding\n'
+            'Exception: libstub\n'
         )
         self.assertEqual(self._helper(result), input)
 
