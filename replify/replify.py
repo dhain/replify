@@ -38,7 +38,7 @@ class DoctestTracebackConsole(code.InteractiveConsole):
             type, value, tb = sys.exc_info()
             lines.extend(traceback.format_exception_only(type, value))
         finally:
-            tb = None
+            tb = None           # noqa
         for line in lines:
             self.write(line)
 
@@ -102,7 +102,10 @@ def main():
 
     context = {}
     if config.context_module:
-        execfile(config.context_module, context)
+        exec(compile(
+            open(config.context_module, 'rb').read(),
+            config.context_module, 'exec'
+        ), context)
 
     replify(config.infile, config.outfile, context, config.console_type)
 
