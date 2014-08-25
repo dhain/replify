@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 import re
 import sys
 import code
@@ -8,6 +9,27 @@ import argparse
 
 ps1 = '>>> '
 ps2 = '... '
+
+if sys.version_info[0] >= 3:
+    def import_module(name):
+        from importlib import import_module
+        return import_module(name)
+
+    def import_file(path):
+        from importlib.machinery import SourceFileLoader
+        name, _ = os.path.splitext(os.path.basename(config.context_file))
+        return SourceFileLoader(name, path).load_module()
+
+else:
+    def import_module(name):
+        from imp import find_module, load_module
+        fp, pathname, desc = find_module(name)
+        return load_module(name, fp, pathname, desc)
+
+    def import_file(path):
+        from imp import load_source
+        name, _ = os.path.splitext(os.path.basename(config.context_file))
+        return load_source(name, path)
 
 
 class Indentifier(object):
@@ -87,8 +109,11 @@ def main():
         description='Adds or removes ">>>" prompt prefix from input lines.'
     )
     parser.add_argument(
-        'context_module', metavar='MODULE', nargs='?',
-        help='Path to python module to execute as context.')
+        'context_file', metavar='FILE', nargs='?',
+        help='Path to python file to execute as context.')
+    parser.add_argument(
+        '-m', '--context-module', metavar='MODULE',
+        help='Python module to execute as context.')
     parser.add_argument(
         '-i', '--infile', type=argparse.FileType('r'), default=sys.stdin)
     parser.add_argument(
@@ -100,14 +125,15 @@ def main():
 
     config = parser.parse_args()
 
-    context = {}
-    if config.context_module:
-        exec(compile(
-            open(config.context_module, 'rb').read(),
-            config.context_module, 'exec'
-        ), context)
+    if config.context_module and config.context_file:
+        parser.error('only one of -m or FILE may be specified')
 
-    replify(config.infile, config.outfile, context, config.console_type)
+    if config.context_file:
+        mod = import_file(config.context_file)
+    elif config.context_module:
+        mod = import_module(config.context_module)
+
+    replify(config.infile, config.outfile, mod.__dict__, config.console_type)
 
     sys.exit(0)
 

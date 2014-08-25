@@ -210,7 +210,9 @@ class TestReplify(unittest.TestCase):
             'Traceback (most recent call last):\n'
             '  File "<stdin>", line 1, in <module>\n'
             '  File "<stdin>", line 2, in a\n'
-            "NameError: global name 'b' is not defined\n"
+            "NameError: %sname 'b' is not defined\n" % (
+                'global ' if sys.version_info[:2] < (3,4) else '',
+            )
         )
         self.assertEqual(self._helper(result), input)
 
