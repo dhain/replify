@@ -83,7 +83,9 @@ def replify(infile, outfile, context, console_type=None):
                 sys.stdout = sys.stderr = Indentifier(outfile, initial_indent)
                 if line.lstrip().startswith(ps1):
                     dereplify = True
-            if line.startswith(initial_indent):
+            if not line.rstrip('\r\n'):
+                pass
+            elif line.startswith(initial_indent):
                 line = line[len(initial_indent):]
             else:
                 raise ValueError()
@@ -92,6 +94,8 @@ def replify(infile, outfile, context, console_type=None):
                     line = line[len(ps1):]
                 elif line.startswith(ps2):
                     line = line[len(ps2):]
+                elif not line.rstrip('\r\n'):
+                    pass
                 else:
                     line = ''
                 sys.stdout.write(line)
